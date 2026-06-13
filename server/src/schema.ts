@@ -8,6 +8,11 @@ import { z } from "zod";
  * Both forms are valid for figma.getNodeById and are returned as-is by the plugin
  * from get_selection / get_design_context.
  */
+
+/**
+ * Creates a Zod schema that validates a Figma node ID string.
+ * @returns A Zod string schema for node IDs.
+ */
 const createFigmaNodeIdSchema = () => z
   .string()
   .regex(
@@ -15,11 +20,20 @@ const createFigmaNodeIdSchema = () => z
     "Node ID must use colon format, e.g. '4029:12345', or instance-child format 'I12740:17806;12740:17793'"
   );
 
+/** Shared Figma node ID schema for reuse in RPC validation. */
 export const figmaNodeId = createFigmaNodeIdSchema();
 
+/**
+ * Creates a Zod schema that validates a screenshot export format.
+ * @returns A Zod enum schema for export formats.
+ */
 const createExportFormatSchema = () => z.enum(["PNG", "SVG", "JPG", "PDF"]);
 const exportFormat = createExportFormatSchema();
 
+/**
+ * Creates a Zod schema that validates a CSS-style hex color string.
+ * @returns A Zod string schema for hex colors.
+ */
 const createHexColorSchema = () => z
   .string()
   .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Color must be a hex value like '#FFAA00'");
