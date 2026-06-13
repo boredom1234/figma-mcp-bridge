@@ -8,16 +8,22 @@ import { z } from "zod";
  * Both forms are valid for figma.getNodeById and are returned as-is by the plugin
  * from get_selection / get_design_context.
  */
-export const figmaNodeId = z
+const createFigmaNodeIdSchema = () => z
   .string()
   .regex(
     /^(\d+:\d+|I\d+:\d+(;\d+:\d+)+)$/,
     "Node ID must use colon format, e.g. '4029:12345', or instance-child format 'I12740:17806;12740:17793'"
   );
-const exportFormat = z.enum(["PNG", "SVG", "JPG", "PDF"]);
-const hexColor = z
+
+export const figmaNodeId = createFigmaNodeIdSchema();
+
+const createExportFormatSchema = () => z.enum(["PNG", "SVG", "JPG", "PDF"]);
+const exportFormat = createExportFormatSchema();
+
+const createHexColorSchema = () => z
   .string()
   .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Color must be a hex value like '#FFAA00'");
+const hexColor = createHexColorSchema();
 const textAlignHorizontal = z.enum(["LEFT", "CENTER", "RIGHT", "JUSTIFIED"]);
 const textAlignVertical = z.enum(["TOP", "CENTER", "BOTTOM"]);
 const textAutoResize = z.enum(["NONE", "WIDTH_AND_HEIGHT", "HEIGHT", "TRUNCATE"]);
@@ -37,7 +43,7 @@ const gradientStop = z.object({
     .min(0)
     .max(1)
     .describe("Stop position from 0 (start of gradient) to 1 (end)"),
-  hex: hexColor.describe("Stop color as hex"),
+  hex: createHexColorSchema().describe("Stop color as hex"),
   opacity: z
     .number()
     .min(0)
@@ -56,7 +62,7 @@ const gradientTransform = z
   );
 
 export const setGradientFillInput = z.object({
-  nodeId: figmaNodeId.describe("The node ID to update"),
+  nodeId: createFigmaNodeIdSchema().describe("The node ID to update"),
   gradientType: z
     .enum(["LINEAR", "RADIAL", "ANGULAR", "DIAMOND"])
     .optional()
@@ -80,7 +86,7 @@ export const setGradientFillInput = z.object({
 });
 
 export const setNodePropertiesInput = z.object({
-  nodeId: figmaNodeId.describe("The node ID to update"),
+  nodeId: createFigmaNodeIdSchema().describe("The node ID to update"),
   name: z.string().optional().describe("Optional new node name"),
   x: z.number().optional().describe("Optional x position"),
   y: z.number().optional().describe("Optional y position"),
@@ -103,8 +109,8 @@ export const setNodePropertiesInput = z.object({
 });
 
 export const setSolidFillInput = z.object({
-  nodeId: figmaNodeId.describe("The node ID to update"),
-  hex: hexColor.describe("Solid color as hex (e.g. '#FFAA00')"),
+  nodeId: createFigmaNodeIdSchema().describe("The node ID to update"),
+  hex: createHexColorSchema().describe("Solid color as hex (e.g. '#FFAA00')"),
   opacity: z
     .number()
     .min(0)
@@ -142,7 +148,7 @@ const blendMode = z.enum([
 
 const shadowEffect = z.object({
   type: z.enum(["DROP_SHADOW", "INNER_SHADOW"]),
-  color: hexColor.describe("Shadow color as hex"),
+  color: createHexColorSchema().describe("Shadow color as hex"),
   opacity: z
     .number()
     .min(0)
@@ -174,14 +180,14 @@ const blurEffect = z.object({
 
 export const setSelectionInput = z.object({
   nodeIds: z
-    .array(figmaNodeId)
+    .array(createFigmaNodeIdSchema())
     .describe("Node IDs to select. Pass [] to clear the selection."),
   fileKey: fileKeyField,
 });
 
 export const scrollAndZoomIntoViewInput = z.object({
   nodeIds: z
-    .array(figmaNodeId)
+    .array(createFigmaNodeIdSchema())
     .min(1)
     .describe("Node IDs to frame in the viewport"),
   fileKey: fileKeyField,
@@ -189,10 +195,10 @@ export const scrollAndZoomIntoViewInput = z.object({
 
 export const groupNodesInput = z.object({
   nodeIds: z
-    .array(figmaNodeId)
+    .array(createFigmaNodeIdSchema())
     .min(1)
     .describe("Node IDs to group. Must share a common parent."),
-  parentId: figmaNodeId
+  parentId: createFigmaNodeIdSchema()
     .optional()
     .describe(
       "Optional explicit parent for the new group. Defaults to the shared parent of the input nodes."
@@ -202,14 +208,14 @@ export const groupNodesInput = z.object({
 });
 
 export const ungroupNodeInput = z.object({
-  nodeId: figmaNodeId.describe(
+  nodeId: createFigmaNodeIdSchema().describe(
     "Group or frame to ungroup. Children move up to its parent and the wrapper is removed."
   ),
   fileKey: fileKeyField,
 });
 
 export const setEffectsInput = z.object({
-  nodeId: figmaNodeId.describe("The node ID to update"),
+  nodeId: createFigmaNodeIdSchema().describe("The node ID to update"),
   effects: z
     .array(z.discriminatedUnion("type", [shadowEffect, blurEffect]))
     .describe(
@@ -219,7 +225,7 @@ export const setEffectsInput = z.object({
 });
 
 export const setStrokePropertiesInput = z.object({
-  nodeId: figmaNodeId.describe("The node ID to update"),
+  nodeId: createFigmaNodeIdSchema().describe("The node ID to update"),
   strokeWeight: z
     .number()
     .min(0)
@@ -253,7 +259,7 @@ export const setStrokePropertiesInput = z.object({
 });
 
 export const setAutoLayoutInput = z.object({
-  nodeId: figmaNodeId.describe("The node ID to update (must be a frame)"),
+  nodeId: createFigmaNodeIdSchema().describe("The node ID to update (must be a frame)"),
   layoutMode: z
     .enum(["NONE", "HORIZONTAL", "VERTICAL"])
     .optional()
@@ -295,14 +301,14 @@ export const setAutoLayoutInput = z.object({
 
 export const createFrameInput = z.object({
   name: z.string().optional().describe("Optional frame name"),
-  parentId: figmaNodeId
+  parentId: createFigmaNodeIdSchema()
     .optional()
     .describe("Optional parent node ID to append the frame into"),
   x: z.number().optional().describe("Optional x position"),
   y: z.number().optional().describe("Optional y position"),
   width: z.number().positive().optional().describe("Frame width"),
   height: z.number().positive().optional().describe("Frame height"),
-  fillHex: hexColor
+  fillHex: createHexColorSchema()
     .optional()
     .describe("Optional solid fill color as hex"),
   fillOpacity: z
@@ -315,7 +321,7 @@ export const createFrameInput = z.object({
 });
 
 export const setTextPropertiesShape = z.object({
-  nodeId: figmaNodeId.describe("The text node ID to update"),
+  nodeId: createFigmaNodeIdSchema().describe("The text node ID to update"),
   fontFamily: z.string().optional().describe("Optional font family"),
   fontStyle: z.string().optional().describe("Optional font style"),
   fontSize: z.number().positive().optional().describe("Optional font size"),
@@ -337,7 +343,7 @@ export const setTextPropertiesShape = z.object({
     .number()
     .optional()
     .describe("Optional letter spacing in pixels"),
-  fillHex: hexColor.optional().describe("Optional text fill color as hex"),
+  fillHex: createHexColorSchema().optional().describe("Optional text fill color as hex"),
   fillOpacity: z
     .number()
     .min(0)
@@ -377,7 +383,7 @@ export const setTextPropertiesInput = setTextPropertiesShape
 
 export const createTextShape = z.object({
   name: z.string().optional().describe("Optional text node name"),
-  parentId: figmaNodeId
+  parentId: createFigmaNodeIdSchema()
     .optional()
     .describe("Optional parent node ID to append the text into"),
   characters: z.string().optional().describe("Initial text content"),
@@ -390,7 +396,7 @@ export const createTextShape = z.object({
   textAutoResize: textAutoResize
     .optional()
     .describe("Optional text auto-resize mode"),
-  fillHex: hexColor.optional().describe("Optional text fill color as hex"),
+  fillHex: createHexColorSchema().optional().describe("Optional text fill color as hex"),
   fillOpacity: z
     .number()
     .min(0)
@@ -413,7 +419,7 @@ export const createTextInput = createTextShape
 export const createShapeShape = z.object({
   shapeType: shapeType.describe("Shape type to create"),
   name: z.string().optional().describe("Optional shape name"),
-  parentId: figmaNodeId
+  parentId: createFigmaNodeIdSchema()
     .optional()
     .describe("Optional parent node ID to append the shape into"),
   x: z.number().optional().describe("Optional x position"),
@@ -426,14 +432,14 @@ export const createShapeShape = z.object({
     .min(0)
     .optional()
     .describe("Optional corner radius for supported shapes"),
-  fillHex: hexColor.optional().describe("Optional fill color as hex"),
+  fillHex: createHexColorSchema().optional().describe("Optional fill color as hex"),
   fillOpacity: z
     .number()
     .min(0)
     .max(1)
     .optional()
     .describe("Optional fill opacity from 0 to 1"),
-  strokeHex: hexColor.optional().describe("Optional stroke color as hex"),
+  strokeHex: createHexColorSchema().optional().describe("Optional stroke color as hex"),
   strokeOpacity: z
     .number()
     .min(0)
@@ -474,7 +480,7 @@ export const createImageInput = z.object({
       "Image source. Accepts a local file path (absolute or relative to the MCP server cwd), an http/https URL, or a data URI."
     ),
   name: z.string().optional().describe("Optional image node name"),
-  parentId: figmaNodeId
+  parentId: createFigmaNodeIdSchema()
     .optional()
     .describe("Optional parent node ID to append the image into"),
   x: z.number().optional().describe("Optional x position"),
@@ -502,7 +508,7 @@ export const toolInputSchemas = {
   }),
 
   get_node: z.object({
-    nodeId: figmaNodeId.describe(
+    nodeId: createFigmaNodeIdSchema().describe(
       "The node ID to fetch. Accepts top-level IDs like '4029:12345' and instance-child IDs like 'I12740:17806;12740:17793'."
     ),
     fileKey: fileKeyField,
@@ -530,12 +536,12 @@ export const toolInputSchemas = {
 
   get_screenshot: z.object({
     nodeIds: z
-      .array(figmaNodeId)
+      .array(createFigmaNodeIdSchema())
       .optional()
       .describe(
         "Optional list of node IDs to export. Accepts top-level IDs like '4029:12345' and instance-child IDs like 'I12740:17806;12740:17793'. Never use hyphens. If empty, exports the current selection.",
       ),
-    format: exportFormat
+    format: createExportFormatSchema()
       .optional()
       .describe("Export format: PNG (default) or SVG or JPG or PDF"),
     scale: z
@@ -555,7 +561,7 @@ export const toolInputSchemas = {
     items: z
       .array(
         z.object({
-          nodeId: figmaNodeId.describe("The node ID to modify"),
+          nodeId: createFigmaNodeIdSchema().describe("The node ID to modify"),
           visible: z.boolean().describe("true to show, false to hide"),
         })
       )
@@ -565,7 +571,7 @@ export const toolInputSchemas = {
   }),
 
   set_text_content: z.object({
-    nodeId: figmaNodeId.describe("The text node ID to update"),
+    nodeId: createFigmaNodeIdSchema().describe("The text node ID to update"),
     text: z.string().describe("The new text content"),
     fileKey: fileKeyField,
   }),
@@ -633,7 +639,7 @@ export const toolInputSchemas = {
 
   duplicate_nodes: z.object({
     nodeIds: z
-      .array(figmaNodeId)
+      .array(createFigmaNodeIdSchema())
       .min(1)
       .describe("List of node IDs to duplicate"),
     fileKey: fileKeyField,
@@ -641,10 +647,10 @@ export const toolInputSchemas = {
 
   reparent_nodes: z.object({
     nodeIds: z
-      .array(figmaNodeId)
+      .array(createFigmaNodeIdSchema())
       .min(1)
       .describe("List of node IDs to move"),
-    parentId: figmaNodeId.describe("Destination parent node ID"),
+    parentId: createFigmaNodeIdSchema().describe("Destination parent node ID"),
     fileKey: fileKeyField,
   }),
 
@@ -658,7 +664,7 @@ export const toolInputSchemas = {
 
   delete_nodes: z.object({
     nodeIds: z
-      .array(figmaNodeId)
+      .array(createFigmaNodeIdSchema())
       .min(1)
       .describe("List of node IDs to delete"),
     confirm: z
@@ -671,7 +677,7 @@ export const toolInputSchemas = {
     items: z
       .array(
         z.object({
-          nodeId: figmaNodeId.describe(
+          nodeId: createFigmaNodeIdSchema().describe(
             "The node ID to export. Accepts top-level IDs like '4029:12345' and instance-child IDs like 'I12740:17806;12740:17793'."
           ),
           outputPath: z
@@ -680,7 +686,7 @@ export const toolInputSchemas = {
             .describe(
               "Output file path (relative paths resolve from the MCP server current working directory)",
             ),
-          format: exportFormat
+          format: createExportFormatSchema()
             .optional()
             .describe("Per-item export format override: PNG, SVG, JPG, or PDF"),
           scale: z
@@ -697,7 +703,7 @@ export const toolInputSchemas = {
       )
       .min(1)
       .describe("List of screenshot save operations to execute in batch"),
-    format: exportFormat
+    format: createExportFormatSchema()
       .optional()
       .describe("Default export format: PNG (default) or SVG or JPG or PDF"),
     scale: z
