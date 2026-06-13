@@ -53,10 +53,8 @@ const gradientStop = z.object({
 });
 
 const gradientTransform = z
-  .tuple([
-    z.tuple([z.number(), z.number(), z.number()]),
-    z.tuple([z.number(), z.number(), z.number()]),
-  ])
+  .array(z.array(z.number()).length(3))
+  .length(2)
   .describe(
     "2x3 affine matrix [[a,b,tx],[c,d,ty]] mapping the unit gradient onto the shape (Figma's gradientTransform). Defaults to identity (horizontal left→right)."
   );
@@ -178,6 +176,42 @@ const blurEffect = z.object({
   visible: z.boolean().optional().describe("Default true"),
 });
 
+const effectInput = z.object({
+  type: z
+    .enum(["DROP_SHADOW", "INNER_SHADOW", "LAYER_BLUR", "BACKGROUND_BLUR"])
+    .describe("Effect type"),
+  color: createHexColorSchema()
+    .optional()
+    .describe("Required for shadow effects"),
+  opacity: z
+    .number()
+    .min(0)
+    .max(1)
+    .optional()
+    .describe("Shadow alpha 0..1 (default 1)"),
+  offset: z
+    .object({
+      x: z.number(),
+      y: z.number(),
+    })
+    .optional()
+    .describe("Required for shadow effects"),
+  radius: z.number().min(0).optional().describe("Required blur radius"),
+  spread: z
+    .number()
+    .optional()
+    .describe(
+      "Expand/contract distance (default 0). Only honored on rects/ellipses, or on frames/components/instances with visible fills and clipsContent."
+    ),
+  blendMode: blendMode.optional().describe("Default NORMAL"),
+  visible: z.boolean().optional().describe("Default true"),
+});
+
+const effectRuntimeSchema = z.discriminatedUnion("type", [
+  shadowEffect,
+  blurEffect,
+]);
+
 export const setSelectionInput = z.object({
   nodeIds: z
     .array(createFigmaNodeIdSchema())
@@ -214,14 +248,28 @@ export const ungroupNodeInput = z.object({
   fileKey: fileKeyField,
 });
 
-export const setEffectsInput = z.object({
+export const setEffectsShape = z.object({
   nodeId: createFigmaNodeIdSchema().describe("The node ID to update"),
   effects: z
-    .array(z.discriminatedUnion("type", [shadowEffect, blurEffect]))
+    .array(effectInput)
     .describe(
       "Full replacement list of effects. Pass [] to clear all effects. Each entry is a drop/inner shadow or a layer/background blur."
     ),
   fileKey: fileKeyField,
+});
+
+export const setEffectsInput = setEffectsShape.superRefine((value, ctx) => {
+  value.effects.forEach((effect, index) => {
+    const result = effectRuntimeSchema.safeParse(effect);
+    if (result.success) return;
+
+    for (const issue of result.error.issues) {
+      ctx.addIssue({
+        ...issue,
+        path: ["effects", index, ...issue.path],
+      });
+    }
+  });
 });
 
 export const setStrokePropertiesInput = z.object({

@@ -15,6 +15,7 @@ import {
   setNodePropertiesInput,
   setGradientFillInput,
   setSolidFillInput,
+  setEffectsShape,
   setEffectsInput,
   setStrokePropertiesInput,
   setAutoLayoutInput,
@@ -293,8 +294,11 @@ export function registerTools(
   server.tool(
     "set_effects",
     "Replace a node's effects list (drop/inner shadows, layer/background blurs). Pass an empty array to clear all effects. Each entry mirrors the shape returned by get_node's `effects` field.",
-    setEffectsInput.shape,
-    async ({ nodeId, fileKey, ...params }): Promise<ToolResult> => {
+    setEffectsShape.shape,
+    async (args): Promise<ToolResult> => {
+      const parsed = parseToolInput(setEffectsInput, args);
+      if (!parsed.success) return parsed.error;
+      const { nodeId, fileKey, ...params } = parsed.data;
       return renderResponse(() =>
         node.sendWithParams("set_effects", [nodeId], params, fileKey)
       );
