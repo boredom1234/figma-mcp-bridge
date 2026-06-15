@@ -13,34 +13,39 @@ import { z } from "zod";
  * Creates a Zod schema that validates a Figma node ID string.
  * @returns A Zod string schema for node IDs.
  */
-const createFigmaNodeIdSchema = () => z
-  .string()
-  .regex(
-    /^(\d+:\d+|I\d+:\d+(;\d+:\d+)+)$/,
-    "Node ID must use colon format, e.g. '4029:12345', or instance-child format 'I12740:17806;12740:17793'"
-  );
-
-/** Shared Figma node ID schema for reuse in RPC validation. */
-export const figmaNodeId = createFigmaNodeIdSchema();
+const createFigmaNodeIdSchema = () =>
+  z
+    .string()
+    .regex(
+      /^(\d+:\d+|I\d+:\d+(;\d+:\d+)+)$/,
+      "Node ID must use colon format, e.g. '4029:12345', or instance-child format 'I12740:17806;12740:17793'"
+    );
 
 /**
  * Creates a Zod schema that validates a screenshot export format.
  * @returns A Zod enum schema for export formats.
  */
 const createExportFormatSchema = () => z.enum(["PNG", "SVG", "JPG", "PDF"]);
-const exportFormat = createExportFormatSchema();
 
 /**
  * Creates a Zod schema that validates a CSS-style hex color string.
  * @returns A Zod string schema for hex colors.
  */
-const createHexColorSchema = () => z
-  .string()
-  .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Color must be a hex value like '#FFAA00'");
-const hexColor = createHexColorSchema();
+const createHexColorSchema = () =>
+  z
+    .string()
+    .regex(
+      /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/,
+      "Color must be a hex value like '#FFAA00'"
+    );
 const textAlignHorizontal = z.enum(["LEFT", "CENTER", "RIGHT", "JUSTIFIED"]);
 const textAlignVertical = z.enum(["TOP", "CENTER", "BOTTOM"]);
-const textAutoResize = z.enum(["NONE", "WIDTH_AND_HEIGHT", "HEIGHT", "TRUNCATE"]);
+const textAutoResize = z.enum([
+  "NONE",
+  "WIDTH_AND_HEIGHT",
+  "HEIGHT",
+  "TRUNCATE",
+]);
 const shapeType = z.enum(["RECTANGLE", "ELLIPSE", "LINE"]);
 const imageScaleMode = z.enum(["FILL", "FIT"]);
 
@@ -112,11 +117,7 @@ export const setNodePropertiesInput = z.object({
     .optional()
     .describe("Optional opacity from 0 to 1"),
   visible: z.boolean().optional().describe("Optional visibility"),
-  cornerRadius: z
-    .number()
-    .min(0)
-    .optional()
-    .describe("Optional corner radius"),
+  cornerRadius: z.number().min(0).optional().describe("Optional corner radius"),
   fileKey: fileKeyField,
 });
 
@@ -304,13 +305,7 @@ export const setStrokePropertiesInput = z.object({
       "Dash pattern as [dash, gap, dash, gap, ...] in pixels. Pass [] for a solid stroke."
     ),
   strokeCap: z
-    .enum([
-      "NONE",
-      "ROUND",
-      "SQUARE",
-      "ARROW_LINES",
-      "ARROW_EQUILATERAL",
-    ])
+    .enum(["NONE", "ROUND", "SQUARE", "ARROW_LINES", "ARROW_EQUILATERAL"])
     .optional()
     .describe("End-cap style (only meaningful on open paths/lines)"),
   strokeJoin: z
@@ -321,7 +316,9 @@ export const setStrokePropertiesInput = z.object({
 });
 
 export const setAutoLayoutInput = z.object({
-  nodeId: createFigmaNodeIdSchema().describe("The node ID to update (must be a frame)"),
+  nodeId: createFigmaNodeIdSchema().describe(
+    "The node ID to update (must be a frame)"
+  ),
   layoutMode: z
     .enum(["NONE", "HORIZONTAL", "VERTICAL"])
     .optional()
@@ -405,7 +402,9 @@ export const setTextPropertiesShape = z.object({
     .number()
     .optional()
     .describe("Optional letter spacing in pixels"),
-  fillHex: createHexColorSchema().optional().describe("Optional text fill color as hex"),
+  fillHex: createHexColorSchema()
+    .optional()
+    .describe("Optional text fill color as hex"),
   fillOpacity: z
     .number()
     .min(0)
@@ -436,11 +435,11 @@ export const setTextPropertiesInput = setTextPropertiesShape
       value.y !== undefined ||
       value.width !== undefined ||
       value.height !== undefined,
-    "At least one text property must be provided",
+    "At least one text property must be provided"
   )
   .refine(
     (value) => value.fillOpacity === undefined || value.fillHex !== undefined,
-    "fillHex is required when fillOpacity is provided",
+    "fillHex is required when fillOpacity is provided"
   );
 
 export const createTextShape = z.object({
@@ -458,7 +457,9 @@ export const createTextShape = z.object({
   textAutoResize: textAutoResize
     .optional()
     .describe("Optional text auto-resize mode"),
-  fillHex: createHexColorSchema().optional().describe("Optional text fill color as hex"),
+  fillHex: createHexColorSchema()
+    .optional()
+    .describe("Optional text fill color as hex"),
   fillOpacity: z
     .number()
     .min(0)
@@ -472,11 +473,10 @@ export const createTextShape = z.object({
   fileKey: fileKeyField,
 });
 
-export const createTextInput = createTextShape
-  .refine(
-    (value) => value.fillOpacity === undefined || value.fillHex !== undefined,
-    "fillHex is required when fillOpacity is provided",
-  );
+export const createTextInput = createTextShape.refine(
+  (value) => value.fillOpacity === undefined || value.fillHex !== undefined,
+  "fillHex is required when fillOpacity is provided"
+);
 
 export const createShapeShape = z.object({
   shapeType: shapeType.describe("Shape type to create"),
@@ -494,14 +494,18 @@ export const createShapeShape = z.object({
     .min(0)
     .optional()
     .describe("Optional corner radius for supported shapes"),
-  fillHex: createHexColorSchema().optional().describe("Optional fill color as hex"),
+  fillHex: createHexColorSchema()
+    .optional()
+    .describe("Optional fill color as hex"),
   fillOpacity: z
     .number()
     .min(0)
     .max(1)
     .optional()
     .describe("Optional fill opacity from 0 to 1"),
-  strokeHex: createHexColorSchema().optional().describe("Optional stroke color as hex"),
+  strokeHex: createHexColorSchema()
+    .optional()
+    .describe("Optional stroke color as hex"),
   strokeOpacity: z
     .number()
     .min(0)
@@ -519,19 +523,20 @@ export const createShapeShape = z.object({
 export const createShapeInput = createShapeShape
   .refine(
     (value) => value.fillOpacity === undefined || value.fillHex !== undefined,
-    "fillHex is required when fillOpacity is provided",
+    "fillHex is required when fillOpacity is provided"
   )
   .refine(
-    (value) => value.strokeOpacity === undefined || value.strokeHex !== undefined,
-    "strokeHex is required when strokeOpacity is provided",
+    (value) =>
+      value.strokeOpacity === undefined || value.strokeHex !== undefined,
+    "strokeHex is required when strokeOpacity is provided"
   )
   .refine(
     (value) => value.shapeType !== "LINE" || value.fillHex === undefined,
-    "LINE shapes do not support fillHex — use strokeHex instead",
+    "LINE shapes do not support fillHex — use strokeHex instead"
   )
   .refine(
     (value) => value.shapeType !== "LINE" || value.strokeHex !== undefined,
-    "LINE shapes require strokeHex (lines have no fill and would be invisible otherwise)",
+    "LINE shapes require strokeHex (lines have no fill and would be invisible otherwise)"
   );
 
 export const createImageInput = z.object({
@@ -549,11 +554,7 @@ export const createImageInput = z.object({
   y: z.number().optional().describe("Optional y position"),
   width: z.number().positive().optional().describe("Optional width"),
   height: z.number().positive().optional().describe("Optional height"),
-  cornerRadius: z
-    .number()
-    .min(0)
-    .optional()
-    .describe("Optional corner radius"),
+  cornerRadius: z.number().min(0).optional().describe("Optional corner radius"),
   scaleMode: imageScaleMode
     .optional()
     .describe("How the image should fit its bounds: FILL (default) or FIT"),
@@ -601,7 +602,7 @@ export const toolInputSchemas = {
       .array(createFigmaNodeIdSchema())
       .optional()
       .describe(
-        "Optional list of node IDs to export. Accepts top-level IDs like '4029:12345' and instance-child IDs like 'I12740:17806;12740:17793'. Never use hyphens. If empty, exports the current selection.",
+        "Optional list of node IDs to export. Accepts top-level IDs like '4029:12345' and instance-child IDs like 'I12740:17806;12740:17793'. Never use hyphens. If empty, exports the current selection."
       ),
     format: createExportFormatSchema()
       .optional()
@@ -614,7 +615,7 @@ export const toolInputSchemas = {
       .boolean()
       .optional()
       .describe(
-        "When true, export using Figma's absolute node bounds (REST use_absolute_bounds / plugin useAbsoluteBounds) so PNGs are clipped to the node's logical bounds",
+        "When true, export using Figma's absolute node bounds (REST use_absolute_bounds / plugin useAbsoluteBounds) so PNGs are clipped to the node's logical bounds"
       ),
     fileKey: fileKeyField,
   }),
@@ -684,14 +685,13 @@ export const toolInputSchemas = {
       value.opacity !== undefined ||
       value.visible !== undefined ||
       value.cornerRadius !== undefined,
-    "At least one property must be provided",
+    "At least one property must be provided"
   ),
 
-  create_frame: createFrameInput
-    .refine(
-      (value) => value.fillOpacity === undefined || value.fillHex !== undefined,
-      "fillHex is required when fillOpacity is provided",
-    ),
+  create_frame: createFrameInput.refine(
+    (value) => value.fillOpacity === undefined || value.fillHex !== undefined,
+    "fillHex is required when fillOpacity is provided"
+  ),
 
   create_text: createTextInput,
 
@@ -729,9 +729,7 @@ export const toolInputSchemas = {
       .array(createFigmaNodeIdSchema())
       .min(1)
       .describe("List of node IDs to delete"),
-    confirm: z
-      .boolean()
-      .describe("Must be true to confirm deletion"),
+    confirm: z.boolean().describe("Must be true to confirm deletion"),
     fileKey: fileKeyField,
   }),
 
@@ -746,7 +744,7 @@ export const toolInputSchemas = {
             .string()
             .min(1)
             .describe(
-              "Output file path (relative paths resolve from the MCP server current working directory)",
+              "Output file path (relative paths resolve from the MCP server current working directory)"
             ),
           format: createExportFormatSchema()
             .optional()
@@ -759,9 +757,9 @@ export const toolInputSchemas = {
             .boolean()
             .optional()
             .describe(
-              "Per-item clipping override. When true, PNGs are clipped to the node's logical bounds using Figma's absolute node bounds.",
+              "Per-item clipping override. When true, PNGs are clipped to the node's logical bounds using Figma's absolute node bounds."
             ),
-        }),
+        })
       )
       .min(1)
       .describe("List of screenshot save operations to execute in batch"),
@@ -776,7 +774,7 @@ export const toolInputSchemas = {
       .boolean()
       .optional()
       .describe(
-        "Default clipping behavior for saved screenshots. When true, PNGs are clipped to the node's logical bounds using Figma's absolute node bounds.",
+        "Default clipping behavior for saved screenshots. When true, PNGs are clipped to the node's logical bounds using Figma's absolute node bounds."
       ),
     fileKey: fileKeyField,
   }),
@@ -803,12 +801,21 @@ const rpcToArgs: Record<
   get_screenshot: (nodeIds, params) => ({ nodeIds, ...params }),
   set_node_visibility: (_nodeIds, params) => ({ ...params }),
   set_text_content: (nodeIds, params) => ({ ...params, nodeId: nodeIds?.[0] }),
-  set_text_properties: (nodeIds, params) => ({ ...params, nodeId: nodeIds?.[0] }),
-  set_node_properties: (nodeIds, params) => ({ ...params, nodeId: nodeIds?.[0] }),
+  set_text_properties: (nodeIds, params) => ({
+    ...params,
+    nodeId: nodeIds?.[0],
+  }),
+  set_node_properties: (nodeIds, params) => ({
+    ...params,
+    nodeId: nodeIds?.[0],
+  }),
   set_gradient_fill: (nodeIds, params) => ({ ...params, nodeId: nodeIds?.[0] }),
   set_solid_fill: (nodeIds, params) => ({ ...params, nodeId: nodeIds?.[0] }),
   set_effects: (nodeIds, params) => ({ ...params, nodeId: nodeIds?.[0] }),
-  set_stroke_properties: (nodeIds, params) => ({ ...params, nodeId: nodeIds?.[0] }),
+  set_stroke_properties: (nodeIds, params) => ({
+    ...params,
+    nodeId: nodeIds?.[0],
+  }),
   set_auto_layout: (nodeIds, params) => ({ ...params, nodeId: nodeIds?.[0] }),
   create_frame: (_nodeIds, params) => ({ ...params }),
   create_text: (_nodeIds, params) => ({ ...params }),
@@ -831,13 +838,13 @@ const rpcToArgs: Record<
 export function validateRpc(
   tool: string,
   nodeIds?: string[],
-  params?: Record<string, unknown>,
+  params?: Record<string, unknown>
 ): string | null {
   if (!(tool in toolInputSchemas)) return null;
 
   const name = tool as ToolName;
   const result = toolInputSchemas[name].safeParse(
-    rpcToArgs[name](nodeIds, params),
+    rpcToArgs[name](nodeIds, params)
   );
   return result.success ? null : result.error.issues[0].message;
 }
